@@ -94,6 +94,21 @@ services:
     networks:
       - payment-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: payment-gateway-frontend
+    ports:
+      - '3001:3001'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+    depends_on:
+      - api
+    networks:
+      - payment-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
