@@ -105,6 +105,9 @@ export class TransactionsService {
       this.logger.error(`Failed to publish transaction ${saved.id} to queue`);
     }
 
+    // Invalidate stats cache so dashboard reflects new transaction immediately
+    await this.cacheManager.del('transactions:stats');
+
     this.logger.log(`Transaction created: ${saved.id} | method: ${saved.paymentMethod} | amount: ${saved.amount}`);
     return saved;
   }
@@ -166,8 +169,9 @@ export class TransactionsService {
 
     await this.transactionRepo.update(id, { status: TransactionStatus.CANCELLED });
 
-    // Invalidate cache
+    // Invalidate caches
     await this.cacheManager.del(`transaction:${id}`);
+    await this.cacheManager.del('transactions:stats');
 
     const updated = await this.transactionRepo.findOne({ where: { id } });
     this.logger.log(`Transaction cancelled: ${id}`);

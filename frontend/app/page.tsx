@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 10_000);
+    const interval = setInterval(load, 3_000);
     return () => clearInterval(interval);
   }, []);
 

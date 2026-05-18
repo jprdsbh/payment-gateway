@@ -1,6 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PaymentMethod, Transaction, TransactionStatus } from '../transactions/entities/transaction.entity';
 import { PixProcessor } from './processors/pix.processor';
 import { CreditCardProcessor } from './processors/credit-card.processor';
@@ -14,6 +16,8 @@ export class PaymentsService implements OnModuleInit, PaymentProcessor {
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepo: Repository<Transaction>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
     private readonly pixProcessor: PixProcessor,
     private readonly creditCardProcessor: CreditCardProcessor,
     private readonly queueConsumer: QueueConsumer,
@@ -78,6 +82,10 @@ export class PaymentsService implements OnModuleInit, PaymentProcessor {
       errorMessage: result.errorMessage || null,
       processedAt: result.processedAt || new Date(),
     });
+
+    // Invalidate stats cache and transaction cache so dashboard updates immediately
+    await this.cacheManager.del('transactions:stats');
+    await this.cacheManager.del(`transaction:${transactionId}`);
 
     this.logger.log(
       `Transaction ${transactionId} finalized with status: ${newStatus}`,
